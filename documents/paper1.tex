@@ -1,4 +1,14 @@
 \documentclass[12pt]{article}
 \begin{document}
-Hello World!
+\section{A Proposed Approach to Kepler data}
+Despite the large amount of work that's gone into developing the TPS system that the Kepler team use, it has a human element to it which appear in two places - firstly, in the selection of KOIs from the transits detected from the output of the TPS, and secondly in the choice to follow up on these candidates in order to get them onto the Kepler candidate list. Thanks to Tenenbaum et al. 2013 (ApJS, 206,5) we have a list of the complete output of TPS - 11,087 targets that have at least one transit, at least 18,000 transits ('TCEs')
+
+Assuming no changes to the code, then the probability of a given source with a TCE being classified as a candidate should depend only on the properties of the source and the transit, presumably in a relatively simple way (transit depth, signal to noise?) at least to first order and not on when the transits were detected\footnote{Sadly, the TPS algorithm has changed over time and not in a well document way, but those results are mentioned in Batlha et al's papers - we'll have to worry about this at some point, perhaps by working backwards to reproduce Batlha's candidate list}. 
+
+Assuming that this process is affected by the work of the science team, and knowing that they were severely short of time, we might use a model which assumes that they spent more time on `exciting' candidates and that these therefore are more likely to be converted to candidates. What's nice about this particular problem is that we have a good working definition of `exciting', or at least could derive one - planets which are in the habitable zone are more exciting that those which are not, and smaller planets trump larger ones. (Presumably stellar properties might matter too - sun-like stars over others? Not sure. There's also the fact that Kepler team originally disfavored giants believing them less likely to have stars/to be more difficult to find planets around than dwarfs). 
+
+(Hopefully) we can assume that that definition of `exciting' changes - for example, the radius of `exciting' planets has been dropping over time. This provides a signal which we could search for as evidence for the impact of scientist bias.
+
+If that sounds sensible, then what data do we need to construct the model?
+ 
 \end{document}
