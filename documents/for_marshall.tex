@@ -1,0 +1,157 @@
+% This file is part of the ScientistScience project.
+% Copyright 2013 David W. Hogg
+
+\documentclass[12pt]{article}
+
+\newcommand{\given}{\,|\,}
+
+\begin{document}
+
+\section*{Combining noisy classifiers}
+
+\textsl{This short note is written by Hogg for Marshall, 2013-10-02.
+  It contains random thoughts that have been brewing for a few weeks,
+  intensified at a dotastronomy unconference session
+  and clarified today at a coffee shop with Foreman-Mackey, Fadely, Kreiss, and others.}
+
+\paragraph{abstract}
+Combination of noisy classifiers is discussed.
+It is argued that the multiplication of individual-classifier likelihoods is
+  by no means the best that can be done.
+Indeed most good methods will combine the classifiers in non-trivial ways,
+  sometimes even including good classifiers with negative weights.
+The fundamental idea is that the classifiers classify indirectly using \emph{features};
+  they don't observe the true class directly;
+  the fact that different classifiers react differently to different features
+  makes them non-independent and invalidates straight multiplication of likelihoods.
+
+\paragraph{independent classifiers:}
+Imagine that you have $N$ independent classifiers%
+  ---unrelated SpaceWarps participants, if you like---%
+  classifying objects into one of two categories%
+  ---``lens'' or ``not lens'' if you like.
+Each of these classifiers is presented with one of $M$ objects $m$
+  that is truly either in class 0 or class 1
+  (denoted $t_m=0$ or $t_m=1$).
+The true class is not observable in the test data
+  (although maybe there are training data for which it \emph{is} known;
+    this is irrelevant to the argument at present).
+Each classifier $n$ reports a classification for object $m$ that is either 0 or 1
+  (denoted $q_{nm}=0$ or $q_{nm}=1$).
+How should we combine these classification data?
+
+If we treat the classifications $q_{nm}$ as the data,
+  and the true classes $t_m$ as latent variables or parameters to be inferred,
+  we might think, in the simplest picture, that the likelihood for each classifier is the pdf
+\begin{eqnarray}
+p(q_{nm}\given t_m, \theta_n)
+\quad ,
+\end{eqnarray}
+  where $\theta_n$ is a blob of parameters that describe each classifier $n$.
+In Phil's current model, this blob $\theta_n$ contains the ``truth table''
+  of how freqently the classifier is expected to say ``$q_{nm}=1$'' when $t_m=1$,
+  and so-on for the four cases of $q_{nm}=0,1$ and $t_m=0,1$.
+(For simplicity let's just assume for now that the classifiers are not time-varying.)
+
+In this simple model,
+  the best possible posterior probabilities you can get for the true classes $t_m$
+  are obtained by multiplying together all the individual classifier likelihoods
+  (pdfs for the $q_{nm}$ evaluated at the reported $q_{nm}$ values,
+  applying Bayes's rule, and then marginalizing out all the $\theta_n$,
+  as per usual.
+This operation is the right thing to do if the graphical model is something like the following:
+\begin{itemize}
+\item
+There is a prior that generates the true values $t_m$.
+\item
+There is a prior that generates classifier parameter blobs $\theta_n$.
+\item
+Each true value $t_m$ and each classifier parameter blob $\theta_n$ jointly generate each classification $q_{nm}$.
+\end{itemize}
+(I would draw this model but it is late and I am typing as fast as I can.)
+
+I think in this graphical model, this is the best possible approach,
+  and (if I understand correctly) it is what is being done under the SpaceWarps hood (as it were),
+  although possibly with a measurement rather than marginalization over the $\theta_n$
+  (because you have training data to estimate the $\theta_n$).
+This is the right thing to do \emph{in this model}.
+
+\paragraph{features correlate shit:}
+However, this model (above) is deeply wrong.
+The real graphical model is like this:
+\begin{itemize}
+\item
+There is a prior that generates the true values $t_m$.
+\item
+There is a prior that generates classifier parameter blobs $\theta_n$.
+\item
+Each true value $t_m$ and \emph{some complicated prior over images} generate an image $I_m$ of object $m$.
+\item
+The image $I_m$ and a (now enormously complicated) classifier parameter blob $\theta_n$ jointly generate a blob of features $\omega_{nm}$.
+\item
+The feature blob $\omega_{nm}$ and the classifier parameter blob $\theta_n$ jointly generate a classification $q_{nm}$.
+\end{itemize}
+That is, the classifiers,
+  although they are acting \emph{independently},
+  do not independently ``observe'' in any sense the true value $t_m$.
+At best, they independently observe the image $I_m$.
+So they might provide independent information about the image $I_m$ but this
+  does not create (in even the most optimistic scenarios) independent information about the true value $t_m$.
+Even \emph{that} is a vain hope, however, because they almost certainly extract different feature blobs $\omega_{nm}$,
+  and these are not visible to the investigator.
+
+Now how do we do inference in this graphical model?
+Turn the standard Bayesian crank.
+Ideally you would want to \emph{marginalize out} the image $I_m$, but you can't,
+  because the image $I_m$ is \emph{observed};
+  it is data too.
+That is, even if the classifiers are not communicating and operate independently,
+  \emph{conditioned on the images $I_m$}, which are observed, the classifiers cannot be independent.
+
+Any combination of the classifiers that is justifiable will have to
+  effectively build some kind of empirical or data-driven or simplified model
+  of how the classifiers extract features from images,
+  and how they base their classifications on those features.
+This might sound insanely complicated,
+  but it is actually Standard Operating Procedure in machine learning these days.
+Two simple approaches that come to mind are the following (both require a training set):
+The Netflix prize was won with boosting,
+  which (if I understand correctly, which is a big ``if'')
+  is a general method for combining noisy classifiers
+  that attempts to build an empirical model
+  for what combinations of bad classifiers can predict \emph{residuals} in the better classifiers.
+A second approach is to treat
+  the classifications $q_{nm}$ for object $m$ from all the $N$ classifiers $n$ as a binary $N$-vector $x_m$;
+  kernel-SVM or random forest or other insanity can be applied to those binary $N$-vectors.
+These classifier combinations should crush the independent multiplication of individual likelihood functions,
+  just because they come closer to operating on the correct graphical model.
+
+The Right Thing To Do (tm) is perform inference on the full graphical model.
+This requires putting priors on the way users extract features,
+  and priors on the way features influence classifications.
+That sounds insane, but I think that is largely what ``deep learning'' is all about these days.
+And there are fully Bayesian versions of deep learning.
+
+\paragraph{a toy example:}
+This example may not be illuminating, but it helped me get to this place:
+In SpaceWarps,
+  imagine that one very capable user $A$ looks for a range of features and is a very good classifier.
+However, user $A$ is overly sensitive to objects that are ``red on the inside, blue on the outside''
+  so although she finds the true lenses,
+  she tends to occasionally classify face-on spiral galaxies as lenses.
+Now imagine that there is another user $B$ who is less capable, and only considers one thing, and one thing only:
+User $B$ only asks ``is it red on the inside and blue on the outside?''.
+User $B$ is much worse than user $A$, but still has a not-terrible ``confusion matrix'',
+  because user $B$'s feature \emph{is} correlated with lens-iness.
+That is, both user $A$ and user $B$ provide useful classification information,
+  even though each user is not perfect:
+User $A$ is a bit too sensitive to the blue--red color gradient, and user $B$ is \emph{way} too sensitive to it.
+
+What is the best way to combine these two classifiers?
+Is it to multiply together their likelihood functions?
+\emph{Absolutely not.}
+Indeed, since the kind of mistake user $A$ makes is strongly correlated with the action of user $B$,
+  you can see that user $B$'s classification should be used \emph{negatively} to adjust user $A$'s pretty-good classifications.
+This is true even though user $B$, on his own, provides useful information and might be used positively in the absence of user $A$.
+
+\end{document}

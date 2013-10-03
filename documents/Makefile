@@ -5,13 +5,11 @@ RM          = rm -rf
 TMP_SUFFS   = pdf aux bbl blg log dvi ps eps out
 SUFF        = pdf
 
-NAME        = paper1
-
 RM_TMP      = ${RM} $(foreach suff, ${TMP_SUFFS}, ${NAME}.${suff})
 
 CHECK_RERUN = grep Rerun $*.log
 
-all: ${NAME}.${SUFF}
+all: paper1.${SUFF} for_marshall.${SUFF}
 
 %.pdf: %.tex
 	${LATEX} $<
